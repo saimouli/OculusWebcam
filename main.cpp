@@ -36,7 +36,7 @@
 
 #define MAX_FPS 120
 
-GLchar* OVR_ZED_VS = 
+GLchar* OVR_cam_VS = 
 			"#version 330 core\n \
 			layout(location=0) in vec3 in_vertex;\n \
 			layout(location=1) in vec2 in_texCoord;\n \
@@ -57,24 +57,24 @@ GLchar* OVR_ZED_VS =
 				}\n \
 			}";
 #if OPENGL_GPU_INTEROP
-GLchar* OVR_ZED_FS =
+GLchar* OVR_cam_FS =
 			"#version 330 core\n \
-			uniform sampler2D u_textureZED; \n \
+			uniform sampler2D u_texturecam; \n \
 			in vec2 b_coordTexture;\n \
 			out vec4 out_color; \n \
 			void main()\n \
 			{\n \
-				out_color = vec4(texture(u_textureZED, b_coordTexture).bgr,1); \n \
+				out_color = vec4(texture(u_texturecam, b_coordTexture).bgr,1); \n \
 			}";
 #else
-GLchar* OVR_ZED_FS =
+GLchar* OVR_cam_FS =
 			"#version 330 core\n \
-			uniform sampler2D u_textureZED; \n \
+			uniform sampler2D u_texturecam; \n \
 			in vec2 b_coordTexture;\n \
 			out vec4 out_color; \n \
 			void main()\n \
 			{\n \
-				out_color = vec4(texture(u_textureZED, b_coordTexture).rgb,1); \n \
+				out_color = vec4(texture(u_texturecam, b_coordTexture).rgb,1); \n \
 			}";
 #endif
 
@@ -137,7 +137,7 @@ int main(int argc, char** argv) {
 	//OpenGL textures
 
 	GLuint camTextureID_L, camTextureID_R;
-	// Generate OpenGL texture for left images of the ZED camera
+	// Generate OpenGL texture for left images of the camera
 	glGenTextures(1, &camTextureID_L);
 	glBindTexture(GL_TEXTURE_2D, camTextureID_L);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, WidthL, HeightL, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
@@ -145,7 +145,7 @@ int main(int argc, char** argv) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	// Generate OpenGL texture for right images of the ZED camera
+	// Generate OpenGL texture for right images of the camera
 	glGenTextures(1, &camTextureID_R);
 	glBindTexture(GL_TEXTURE_2D, camTextureID_R);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, WidthL, HeightL, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
@@ -262,20 +262,20 @@ int main(int argc, char** argv) {
 	ovrVector3f hmdToEyeOffset[2];
 	double sensorSampleTime;
 
-	Shader shader(OVR_ZED_VS, OVR_ZED_FS);
+	Shader shader(OVR_cam_VS, OVR_cam_FS);
 
-	// Compute the ZED image field of view with the ZED parameters
-	float camFovH = 1.f;//atanf(WidthL / (zed->getParameters()->LeftCam.fx *2.f)) * 2.f;//atanf(zed->getImageSize().width / (zed->getParameters()->LeftCam.fx *2.f)) * 2.f;
+	// Compute the cam image field of view with the cam parameters
+	float camFovH = 1.f;//atanf(WidthL / (cam->getParameters()->LeftCam.fx *2.f)) * 2.f;//atanf(cam->getImageSize().width / (cam->getParameters()->LeftCam.fx *2.f)) * 2.f;
 	// Compute the Horizontal Oculus' field of view with its parameters
 	float ovrFovH = (atanf(hmdDesc.DefaultEyeFov[0].LeftTan) + atanf(hmdDesc.DefaultEyeFov[0].RightTan));
-	// Compute the useful part of the ZED image
-	unsigned int usefulWidth = 1220* ovrFovH/ camFovH; //zed->getImageSize().width * ovrFovH / zedFovH;
-	// Compute the size of the final image displayed in the headset with the ZED image's aspect-ratio kept
+	// Compute the useful part of the cam image
+	unsigned int usefulWidth = 1220* ovrFovH/ camFovH; //cam->getImageSize().width * ovrFovH / camFovH;
+	// Compute the size of the final image displayed in the headset with the cam image's aspect-ratio kept
 	unsigned int widthFinal = bufferSize.w / 2;
 	float heightGL = 1.f;
 	float widthGL = 1.f;
 	if (usefulWidth > 0.f){
-		unsigned int heightFinal = HeightL * widthFinal / usefulWidth;//zed->getImageSize().height * widthFinal / usefulWidth;
+		unsigned int heightFinal = HeightL * widthFinal / usefulWidth;//cam->getImageSize().height * widthFinal / usefulWidth;
 		// Convert this size to OpenGL viewport's frame's coordinates
 		heightGL = (heightFinal) / (float)(bufferSize.h);
 		widthGL = ((WidthL * (heightFinal / (float)HeightL)) / (float)widthFinal);
@@ -284,7 +284,7 @@ int main(int argc, char** argv) {
 	else{
 		cout << "WARNING: cam parameters got wrong values."
 			"Default vertical and horizontal FOV are used.\n"
-			"Check your calibration file or check if your ZED is not too close to a surface or an object."
+			"Check your calibration file or check if your cam is not too close to a surface or an object."
 			<< endl;
 	}
 
@@ -349,7 +349,7 @@ int main(int argc, char** argv) {
 
 	// Enable the shader
 	glUseProgram(shader.getProgramId());
-	// Bind the Vertex Buffer Objects of the rectangle that displays ZED images
+	// Bind the Vertex Buffer Objects of the rectangle that displays cam images
 	// vertices
 	glEnableVertexAttribArray(Shader::ATTRIB_VERTICES_POS);
 	glBindBuffer(GL_ARRAY_BUFFER, rectVBO[0]);
@@ -371,9 +371,9 @@ int main(int argc, char** argv) {
 			SDL_Delay(frameRate - timePerFrame);
 			timePerFrame = frameRate;
 		}
-		// Increment the ZED chronometer
+		// Increment the cam chronometer
 		camtime += timePerFrame;
-		// If ZED chronometer reached 1 second
+		// If cam chronometer reached 1 second
 		if (camtime > 1000){
 			camFPS = camc;
 			camc = 0;
@@ -385,7 +385,7 @@ int main(int argc, char** argv) {
 		// If Rift chronometer reached 200 milliseconds
 		if (rifttime > 200){
 			// Display FPS
-			cout << "\rRIFT FPS: " << 1000 / (rifttime / riftc) << " | cam FPS: " << camFPS;
+			cout << "\rRIFT FPS: " << 1000 / (rifttime / riftc) << " | cam FPS: " << camFPS << endl;
 			// Reset Rift chronometer
 			rifttime = 0;
 			// Reset Rift frame counter
@@ -433,16 +433,15 @@ int main(int argc, char** argv) {
 
 		// If the application is focused
 		if (isVisible){
-			// If successful grab a new ZED image
-			cout << "If successful grab a new ZED image" << endl;
+			// If successful grab a new cam image
 			cv::Mat frameL,frameR;
 			LeftCam >> frameL; RightCam>> frameR;
-			if (frameL.empty() && frameR.empty()){
-				// Update the ZED frame counter
-				cout << "frameR.empty "<< endl;
+			if (!frameL.empty() && !frameR.empty()){
+				// Update the cam frame counter
+				cout << "frameR not empty "<< endl;
 				camc++;
 				if (refresh){
-	
+
 					// Bind the frame buffer
 					glBindFramebuffer(GL_FRAMEBUFFER, fboID);
 					// Set its color layer 0 as the current swap texture
@@ -453,22 +452,20 @@ int main(int argc, char** argv) {
 					glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 					glClearColor(0, 0, 0, 1);
 
-					// Render for each Oculus eye the equivalent ZED image
+					// Render for each Oculus eye the equivalent cam image
 					for (int eye = 0; eye < 2; eye++){
 						// Set the left or right vertical half of the buffer as the viewport
 						glViewport(eye == ovrEye_Left ? 0 : bufferSize.w / 2, 0, bufferSize.w / 2, bufferSize.h);
-						// Bind the left or right ZED image
-						glBindTexture(GL_TEXTURE_2D, eye == ovrEye_Left ? camTextureID_L : camTextureID_R);
-#if !OPENGL_GPU_INTEROP
-						
-						//std::cout << "zedHeight= " << frameL.col << std::endl;
-						glTexImage2D(GL_TEXTURE_2D, 0, GL_BGR, WidthL, HeightL, 0, GL_BGR, GL_UNSIGNED_BYTE, eye == ovrEye_Left ? frameL.data : frameR.data);//(eye == ovrEye_Left ? frameR:frameL).data);
-#endif
+						// Bind the left or right cam image
+						glBindTexture(GL_TEXTURE_2D, eye == ovrEye_Left ? camTextureID_L : camTextureID_R);				
+						//std::cout << "camHeight= " << frameL.col << std::endl;
+						glTexImage2D(GL_TEXTURE_2D, 0, GL_BGR, WidthL, HeightL, 0, GL_BGR, GL_UNSIGNED_BYTE,(eye == ovrEye_Left ? frameL:frameR).data);//(eye == ovrEye_Left ? frameR:frameL).data);
+
 						// Bind the hit value
 						glUniform1f(glGetUniformLocation(shader.getProgramId(), "hit"), eye == ovrEye_Left ? hit : -hit);
 						// Bind the isLeft value
 						glUniform1ui(glGetUniformLocation(shader.getProgramId(), "isLeft"), eye == ovrEye_Left ? 1U : 0U);
-						// Draw the ZED image
+						// Draw the cam image
 						glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 					}
 
@@ -515,6 +512,7 @@ int main(int argc, char** argv) {
 		ovrLayerHeader* layers = &ld.Header;
 		// Submit the frame to the Oculus compositor
 		// which will display the frame in the Oculus headset
+		cout << "frame Index:"<<frameIndex << endl;
 		result = ovr_SubmitFrame(session, frameIndex, nullptr, &layers, 1);
 
 		if (!OVR_SUCCESS(result)){
@@ -570,7 +568,7 @@ int main(int argc, char** argv) {
 	glBindVertexArray(0);
 	// Delete the Vertex Buffer Objects of the rectangle
 	glDeleteBuffers(3, rectVBO);
-	// Delete SDL, OpenGL, Oculus and ZED context
+	// Delete SDL, OpenGL, Oculus and cam context
 	ovr_DestroyTextureSwapChain(session, textureChain);
 	ovr_DestroyMirrorTexture(session, mirrorTexture);
 	ovr_Destroy(session);
