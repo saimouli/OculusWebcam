@@ -1,6 +1,9 @@
+SET(CFLAGS -m64)
+SET(CXXFLAGS -m64)
 
-SET(OCULUS_PATH "R:\\SDK's\\OculusSDK")
-SET(SDL_PATH "R:\\SDL2")
+SET(OCULUS_PATH "D://SDK's//OculusSDK_1.10")
+SET(SDL_PATH "D://SDL2")
+set(OpenCV_FOUND 1)
 
 project(Project_webcam_oculus)
 
@@ -51,9 +54,10 @@ SET(SDL_LIBRARIES SDL2 SDL2main)
 
 
 # Mandatory
-find_package(CUDA 6.5 REQUIRED)
+find_package(CUDA 7.0 REQUIRED)
 find_package(OpenGL 3.0 REQUIRED)
-find_package(OpenCV 3.1 COMPONENTS core highgui imgproc REQUIRED)
+
+find_package(OpenCV COMPONENTS core highgui imgproc REQUIRED)
 
 include_directories(${GLUT_INCLUDE_DIRS})
 include_directories(${GLEW_INCLUDE_DIRS})
@@ -77,14 +81,14 @@ FILE(GLOB_RECURSE SRC_FILES "${SRC_FOLDER}/*.cpp")
  
 ADD_EXECUTABLE(${execName} ${SRC_FILES})
 set_property(TARGET ${execName} PROPERTY OUTPUT_NAME "webcam_oculus")
-add_definitions(-std=c++0x)# -m64)
+add_definitions(-std=c++0x)# -m32)
 
 # Add the required libraries for linking:
 TARGET_LINK_LIBRARIES(${execName}
 			${OPENGL_LIBRARIES}
-            ${GLUT_LIBRARY}
+           		${GLUT_LIBRARY}
 			${GLEW_LIBRARIES}			
-			${OpenCV_LIBRARIES}
+			#${OpenCV_LIBRARIES}
 			${SDL_LIBRARIES}
 			${OCULUS_LIBRARIES}
  )
