@@ -1,31 +1,56 @@
-﻿/**********************************
+/**********************************
 ** Rendering webcams in to Oculus Rift
-   Saimouli Katragadda 2016
+AUTHOR: Saimouli Katragadda 2016
+EMAIL: skatraga@umd.edu
+Some parts of the code arefrom zed oculus example code
 **********************************/
- 
+
+//if code does not compile: check version numbers
+//the compilation options were last updated on May 8 for:
+//	Oculus SDK v1.12 (D:\SDK's\OculusSDK_1.12\LibOVR)
+//	ZED SDK v1.142
+//		freeglut v2.8 (D:\ZED SDK\dependencies\freeglut_2.8)
+//		glew v1.12.0 (D:\ZED SDK\dependencies\glew-1.12.0)
+//		opencv v3.1.0 (D:\ZED SDK\dependencies\opencv_3.1.0)
+//	nVidia GPU Computing Toolkit v8.0
+//	SDL2 v2.0 (D:\SDL2)
+//The version numbers at the corresponding file locations should match up here, and with the following options:
+//Right click on "webcam_oculus" in the Solution Explorer to the right, select Properties
+//	c/c++ -> General -> Additional Include Directories
+//	Linker -> General -> Additional Library Directories
+//	Linker -> Input -> Additional Dependencies
+
+//For more information about debugging, see Desktop/5_8_17_Oculus_Webcam_Linking.txt for compilation information on May 8 (when the code last compiled)
+//Also see Google Drive: ARM IT/Manuals/Debugging the Oculus code for a detailed description of how the debugging process went on May 8, and how to solve certain compilation errors.
+
+//Include basic input and output files
 #include <iostream>
 #include <Windows.h>
 
+//Include OpenGL files
 #include <GL/glew.h>
 
 #include <stddef.h>
 
+//Include OpenCV files
 #include <opencv\cv.h>
 #include <opencv\highgui.h>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/opencv.hpp>
 
+//Include SDL files (for keyboard and mouse input)
 //#include <SDL2/SDL.h>
 //#include <SDL2/SDL_syswm.h>
 #include <SDL.h>
 #undef main
 #include <SDL_syswm.h>
 
+//Include Oculus files
 #include <Extras/OVR_Math.h>
 #include <OVR_CAPI.h>
-
 #include <OVR_CAPI_GL.h>
 
+//Include GPU interoperability files (used indirectly by some libraries)
 #if OPENGL_GPU_INTEROP
 
 #include <cuda.h>
@@ -38,8 +63,8 @@
 
 #define MAX_FPS 120
 
-GLchar* OVR_cam_VS = 
-			"#version 330 core\n \
+GLchar* OVR_cam_VS =
+"#version 330 core\n \
 			layout(location=0) in vec3 in_vertex;\n \
 			layout(location=1) in vec2 in_texCoord;\n \
 			uniform float hit; \n \
@@ -60,7 +85,7 @@ GLchar* OVR_cam_VS =
 			}";
 #if OPENGL_GPU_INTEROP
 GLchar* OVR_cam_FS =
-			"#version 330 core\n \
+"#version 330 core\n \
 			uniform sampler2D u_texturecam; \n \
 			in vec2 b_coordTexture;\n \
 			out vec4 out_color; \n \
@@ -70,7 +95,7 @@ GLchar* OVR_cam_FS =
 			}";
 #else
 GLchar* OVR_cam_FS =
-			"#version 330 core\n \
+"#version 330 core\n \
 			uniform sampler2D u_texturecam; \n \
 			in vec2 b_coordTexture;\n \
 			out vec4 out_color; \n \
@@ -82,14 +107,14 @@ GLchar* OVR_cam_FS =
 
 using namespace std;
 
-void cam(float,float);
+//void cam(float, float);
 
 
 int main(int argc, char** argv) {
 	// Initialize SDL2 context
 	SDL_Init(SDL_INIT_VIDEO);
 	ovrResult result = ovr_Initialize(nullptr);
-	if (OVR_FAILURE(result)){
+	if (OVR_FAILURE(result)) {
 		cout << "OVR_FAILURE" << endl;
 		SDL_Quit();
 		return -1;
@@ -100,7 +125,7 @@ int main(int argc, char** argv) {
 
 	//oculus hmd
 	result = ovr_Create(&session, &luid); //missinf amp !DEBUG
-	if (OVR_FAILURE(result)){
+	if (OVR_FAILURE(result)) {
 		cout << "Oculus Rift not detected" << endl;
 		ovr_Shutdown();
 		SDL_Quit();
@@ -123,9 +148,6 @@ int main(int argc, char** argv) {
 	// Turn off vsync to let the compositor do its magic
 	SDL_GL_SetSwapInterval(0);
 
-	//initialize webcams
-	string filenameL = "LeftVideo.mp4";
-	string filenameR = "RightVideo.mp4";
 
 	cv::VideoCapture LeftCam(0), RightCam(1);
 
@@ -186,10 +208,10 @@ int main(int argc, char** argv) {
 	result = ovr_CreateTextureSwapChainGL(session, &descTextureSwap, &textureChain);
 	int length = 0;
 	ovr_GetTextureSwapChainLength(session, textureChain, &length);
-
-	if (OVR_SUCCESS(result)){
+	
+	if (OVR_SUCCESS(result)) {
 		// Sample texture access:
-		for (int i = 0; i < length; i++){
+		for (int i = 0; i < length; i++) {
 			GLuint chainTexId;
 			ovr_GetTextureSwapChainBufferGL(session, textureChain, i, &chainTexId);
 			glBindTexture(GL_TEXTURE_2D, chainTexId);
@@ -199,7 +221,7 @@ int main(int argc, char** argv) {
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		}
 	}
-	else{
+	else {
 		cout << "ERROR: failed creating swap texture" << endl;
 		ovr_Destroy(session);
 		ovr_Shutdown();
@@ -209,6 +231,7 @@ int main(int argc, char** argv) {
 		LeftCam.release();
 		RightCam.release();
 		return -1;
+		system("pause");
 	};
 
 	// Generate frame buffer to render
@@ -235,7 +258,7 @@ int main(int argc, char** argv) {
 
 	ovrMirrorTexture mirrorTexture = nullptr;
 	result = ovr_CreateMirrorTextureGL(session, &descMirrorTexture, &mirrorTexture);
-	if (!OVR_SUCCESS(result)){
+	if (!OVR_SUCCESS(result)) {
 		cout << "ERROR: Failed to create mirror texture" << endl;
 	}
 	GLuint mirrorTextureId;
@@ -272,26 +295,26 @@ int main(int argc, char** argv) {
 
 	// Compute the cam image field of view with the cam parameters
 	float camFovH = 1.f;//atanf(WidthL / (cam->getParameters()->LeftCam.fx *2.f)) * 2.f;//atanf(cam->getImageSize().width / (cam->getParameters()->LeftCam.fx *2.f)) * 2.f;
-	// Compute the Horizontal Oculus' field of view with its parameters
+						// Compute the Horizontal Oculus' field of view with its parameters
 	float ovrFovH = (atanf(hmdDesc.DefaultEyeFov[0].LeftTan) + atanf(hmdDesc.DefaultEyeFov[0].RightTan));
-	/cout << "ovrFOVH: " << ovrFovH << endl;
+	// cout << "ovrFOVH: " << ovrFovH << endl;
 	// Compute the useful part of the cam image
-	unsigned int usefulWidth = 1220* ovrFovH/ camFovH; //cam->getImageSize().width * ovrFovH / camFovH;
-	//cout << "usefulWidth: " << usefulWidth << endl;
-	// Compute the size of the final image displayed in the headset with the cam image's aspect-ratio kept
+	unsigned int usefulWidth = 1220 * ovrFovH / camFovH; //cam->getImageSize().width * ovrFovH / camFovH;
+														 //cout << "usefulWidth: " << usefulWidth << endl;
+														 // Compute the size of the final image displayed in the headset with the cam image's aspect-ratio kept
 	unsigned int widthFinal = 1187;//bufferSize.w / 2;
-	//cout << "widthFinal: " << widthFinal << endl;
+								   //cout << "widthFinal: " << widthFinal << endl;
 	float heightGL = 1.f;
 	float widthGL = 1.f;
-	if (usefulWidth > 0.f){
+	if (usefulWidth > 0.f) {
 		unsigned int heightFinal = HeightL * widthFinal / usefulWidth;//cam->getImageSize().height * widthFinal / usefulWidth;
-		// Convert this size to OpenGL viewport's frame's coordinates
+																	  // Convert this size to OpenGL viewport's frame's coordinates
 		heightGL = 0.502181;// (heightFinal) / (float)(bufferSize.h);
 		cout << "heightfinal: " << heightGL << endl;
 		widthGL = 1.07817;// ((WidthL * (heightFinal / (float)HeightL)) / (float)widthFinal);
 	}
 
-	else{
+	else {
 		cout << "WARNING: cam parameters got wrong values."
 			"Default vertical and horizontal FOV are used.\n"
 			"Check your calibration file or check if your cam is not too close to a surface or an object."
@@ -306,9 +329,8 @@ int main(int argc, char** argv) {
 	float offsetLensCenterX = ((atanf(hmdDesc.DefaultEyeFov[0].LeftTan)) / ovrFovH) * 2.f - 1.f;
 	float offsetLensCenterY = ((atanf(hmdDesc.DefaultEyeFov[0].UpTan)) / ovrFovV) * 2.f - 1.f;
 
-
 	// Create a rectangle with the computed coordinates and push it in GPU memory.
-	struct GLScreenCoordinates{
+	struct GLScreenCoordinates {
 		float left, up, right, down;
 	} screenCoord;
 
@@ -373,11 +395,11 @@ int main(int argc, char** argv) {
 	glVertexAttribPointer(Shader::ATTRIB_TEXTURE2D_POS, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
 	// Main loop
-	while (!end){
+	while (!end) {
 		// Compute the time used to render the previous frame
 		timePerFrame = SDL_GetTicks() - time1;
 		// If the previous frame has been rendered too fast
-		if (timePerFrame < frameRate){
+		if (timePerFrame < frameRate) {
 			// Pause the loop to have a max FPS equal to MAX_FPS
 			SDL_Delay(frameRate - timePerFrame);
 			timePerFrame = frameRate;
@@ -385,7 +407,7 @@ int main(int argc, char** argv) {
 		// Increment the cam chronometer
 		camtime += timePerFrame;
 		// If cam chronometer reached 1 second
-		if (camtime > 1000){
+		if (camtime > 1000) {
 			camFPS = camc;
 			camc = 0;
 			camtime = 0;
@@ -394,7 +416,7 @@ int main(int argc, char** argv) {
 		rifttime += timePerFrame;
 		riftc++;
 		// If Rift chronometer reached 200 milliseconds
-		if (rifttime > 200){
+		if (rifttime > 200) {
 			// Display FPS
 			cout << "\rRIFT FPS: " << 1000 / (rifttime / riftc) << " | cam FPS: " << camFPS << endl;
 			// Reset Rift chronometer
@@ -406,9 +428,9 @@ int main(int argc, char** argv) {
 		time1 = SDL_GetTicks();
 
 		// While there is an event catched and not tested
-		while (SDL_PollEvent(&events)){
+		while (SDL_PollEvent(&events)) {
 			// If a key is released
-			if (events.type == SDL_KEYUP){
+			if (events.type == SDL_KEYUP) {
 				// If Q quit the application
 				if (events.key.keysym.scancode == SDL_SCANCODE_Q)
 					end = true;
@@ -420,7 +442,7 @@ int main(int argc, char** argv) {
 					refresh = !refresh;
 			}
 			// If the mouse wheel is used
-			if (events.type == SDL_MOUSEWHEEL){
+			if (events.type == SDL_MOUSEWHEEL) {
 				// Increase or decrease hit value
 				float s;
 				events.wheel.y > 0 ? s = 1.0f : s = -1.0f;
@@ -443,16 +465,16 @@ int main(int argc, char** argv) {
 		ovr_GetEyePoses(session, frameIndex, ovrTrue, hmdToEyeOffset, eyeRenderPose, &sensorSampleTime);
 
 		// If the application is focused
-		if (isVisible){
+		if (isVisible) {
 			// If successful grab a new cam image
-			cv::Mat frameL,frameR;
+			cv::Mat frameL, frameR;
 			LeftCam.read(frameL); RightCam.read(frameR);
 
-			if (!frameL.empty() && !frameR.empty()){
+			if (!frameL.empty() && !frameR.empty()) {
 				// Update the cam frame counter
-				//cout << "frameR not empty "<< endl;
+				cout << "frameR not empty "<< endl;
 				camc++;
-				if (refresh){
+				if (refresh) {
 
 					// Bind the frame buffer
 					glBindFramebuffer(GL_FRAMEBUFFER, fboID);
@@ -465,15 +487,15 @@ int main(int argc, char** argv) {
 					glClearColor(0, 1, 0, 1);
 
 					// Render for each Oculus eye the equivalent cam image
-					for (int eye = 0; eye < 2; eye++){
+					for (int eye = 0; eye < 2; eye++) {
 						// Set the left or right vertical half of the buffer as the viewport
 						glViewport(eye == ovrEye_Left ? 0 : bufferSize.w / 2, 0, bufferSize.w / 2, bufferSize.h);
 						// Bind the left or right cam image
-						glBindTexture(GL_TEXTURE_2D, eye == ovrEye_Left ? camTextureID_L : camTextureID_R);				
+						glBindTexture(GL_TEXTURE_2D, eye == ovrEye_Left ? camTextureID_L : camTextureID_R);
 						//std::cout << "camHeight= " << frameL.col << std::endl;
-						glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, WidthL, HeightL, 0, GL_BGR, GL_UNSIGNED_BYTE,(eye == ovrEye_Left ? frameL:frameR).data);//(eye == ovrEye_Left ? frameR:frameL).data);
+						glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, WidthL, HeightL, 0, GL_BGR, GL_UNSIGNED_BYTE, (eye == ovrEye_Left ? frameL : frameR).data);//(eye == ovrEye_Left ? frameR:frameL).data);
 
-						// Bind the hit value
+																																							// Bind the hit value
 						glUniform1f(glGetUniformLocation(shader.getProgramId(), "hit"), eye == ovrEye_Left ? hit : -hit);
 						// Bind the isLeft value
 						glUniform1ui(glGetUniformLocation(shader.getProgramId(), "isLeft"), eye == ovrEye_Left ? 1U : 0U);
@@ -508,8 +530,8 @@ int main(int argc, char** argv) {
 		ld.Header.Type = ovrLayerType_EyeFov;
 		// Tell to the Oculus compositor that our texture origin is at the bottom left
 		ld.Header.Flags = ovrLayerFlag_TextureOriginAtBottomLeft;   // Because OpenGL | Disable head tracking
-		// Set the Oculus layer eye field of view for each view
-		for (int eye = 0; eye < 2; ++eye){
+																	// Set the Oculus layer eye field of view for each view
+		for (int eye = 0; eye < 2; ++eye) {
 			// Set the color texture as the current swap texture
 			ld.ColorTexture[eye] = textureChain;
 			// Set the viewport as the right or left vertical half part of the color texture
@@ -528,7 +550,7 @@ int main(int argc, char** argv) {
 		//cout << "frame Index:"<<frameIndex << endl;
 		result = ovr_SubmitFrame(session, frameIndex, nullptr, &layers, 1);
 
-		if (!OVR_SUCCESS(result)){
+		if (!OVR_SUCCESS(result)) {
 			cout << "ERROR: failed to submit frame" << endl;
 			glDeleteBuffers(3, rectVBO);
 			ovr_DestroyTextureSwapChain(session, textureChain);
@@ -540,10 +562,12 @@ int main(int argc, char** argv) {
 			SDL_Quit();
 			LeftCam.release();
 			RightCam.release();
+			system("pause");
 			return -1;
+
 		}
 
-		if (result == ovrSuccess && !isVisible){
+		if (result == ovrSuccess && !isVisible) {
 			cout << "The application is now shown in the headset." << endl;
 		}
 		isVisible = (result == ovrSuccess);
@@ -552,7 +576,7 @@ int main(int argc, char** argv) {
 		ovrSessionStatus sessionStatus;
 		ovr_GetSessionStatus(session, &sessionStatus);
 
-		if (sessionStatus.ShouldRecenter){
+		if (sessionStatus.ShouldRecenter) {
 			cout << "Recenter Tracking asked by Session" << endl;
 			ovr_RecenterTrackingOrigin(session);
 		}
@@ -595,6 +619,3 @@ int main(int argc, char** argv) {
 	system("pause");
 	return 0;
 }
-
-
-
